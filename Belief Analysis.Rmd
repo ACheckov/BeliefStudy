@@ -96,6 +96,12 @@ belief <- read_csv("~/BeliefStudy/belief.csv")
 # Belief Response: 1
 # Irrelevant Response: 0
 # Reality Resposne: NA (because this variable is specifically for responses to non-reality variables)
+#FB4_Cont_NR etc. same as FB3_LOC_NR
+#ToMCompposite: Composite of ALL ToM Tasks:
+# ToMComposite = belief$TB2_Loc_Test + belief$TB2_Cont_Test + belief$FB2_Loc_Test + belief$FB2_Cont_Test + belief$FB3_Cont_Comp + #belief$FB3_Loc_Comp + belief$FB4_Cont_Comp + belief$FB4_Loc_Comp
+#ToMCompositeL: ToM Location Composite
+#ToMCompositeC: ToM Contents Composite
+#TBComp: True Belief Composite
 
 
 
