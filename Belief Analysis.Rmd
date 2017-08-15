@@ -5,7 +5,7 @@ date: "August 15, 2017"
 output: pdf_document
 ---
 
-```{r, echo = FALSE, warning = FALSE, }
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
 #load libraries:
 library(ggplot2) 
 library(tidyr)
@@ -102,7 +102,78 @@ belief <- read_csv("~/BeliefStudy/belief.csv")
 #ToMCompositeL: ToM Location Composite
 #ToMCompositeC: ToM Contents Composite
 #TBComp: True Belief Composite
+```
+#Data Analysis
+##Data Prep
+```{r, echo=FALSE, warning = FALSE}
+###Preparing and re-classing data###
 
+#Create Age Factors for 4-year-olds and 5-year-olds
+#Create factor for gender
+#Create factor for subject
+#Create factor for experimenter
+#Create factor for task order
+
+belief$Age = factor(belief$Age,
+                              labels = c("4", 
+                                         "5"))
+belief$Gender <- factor(belief$Gender)
+belief$Subject <- factor(belief$Subject)
+belief$Experimenter <- factor(belief$Experimenter)
+belief$TaskOrder <- factor(belief$TaskOrder)
+
+#Factor PAR Methods
+
+belief$PARM2CF = factor(belief$PARM2C,
+                     labels = c("RR", 
+                                "BR", 
+                                "PAR"))
+belief$PARM2LF = factor(belief$PARM2L,
+                     labels = c("RR", 
+                                "BR", 
+                                "PAR"))
+
+View(belief)
+```
+##Descriptives
+
+Participants: 85
+
+Mean Age (in Months): 60.5 (43 4-year-olds, 42 5-year-olds)
+
+Gender: Males: 38    Females: 47
+
+
+```{r, echo = FALSE}
+#Look for systematic group differences in gender/age/experimenter/task order
+
+#differences in composites
+#Age v. ToMComposites
+sjp.xtab(belief$ToMCompositeC, belief$Age)
+sjp.xtab(belief$ToMCompositeL, belief$Age)
+sjp.xtab(belief$TBComp, belief$Age)
+
+#Gender v. ToMComposites
+sjp.xtab(belief$ToMCompositeC, belief$Gender)
+sjp.xtab(belief$ToMCompositeL, belief$Gender)
+sjp.xtab(belief$TBComp, belief$Gender)
+
+
+#Experimenter v. ToMComposites
+sjp.xtab(belief$ToMCompositeC, belief$Experimenter)
+sjp.xtab(belief$ToMCompositeL, belief$Experimenter)
+sjp.xtab(belief$TBComp, belief$Experimenter)
+
+#differences in TB performance
+#Age v. ToMComposites
+sjp.xtab(belief$TBComp, belief$Age)
+
+#Gender v. ToMComposites
+sjp.xtab(belief$TBComp, belief$Gender)
+
+#Experimenter v. ToMComposites
+sjp.xtab(belief$TBComp, belief$Experimenter)
 
 
 ```
+   
