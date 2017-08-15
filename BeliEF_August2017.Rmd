@@ -459,18 +459,18 @@ head(corr.tableWMhlp)
 rcorr(as.matrix(corr.tableWMhlp), type = c("pearson"))
 
 #Z-score tasks
-#belief$Z_Fcorsi._hlp = (belief$Fcorsi_hlp - mean(belief$Fcorsi_hlp))/sd(belief$Fcorsi_hlp)
+belief$Z_Fcorsi._hlp = (belief$Fcorsi_hlp - mean(belief$Fcorsi_hlp))/sd(belief$Fcorsi_hlp)
 
-#belief$Z_Bcorsi_hlp = (belief$Bcorsi_hlp - mean(belief$Bcorsi_hlp))/sd(belief$Bcorsi_hlp)
+belief$Z_Bcorsi_hlp = (belief$Bcorsi_hlp - mean(belief$Bcorsi_hlp))/sd(belief$Bcorsi_hlp)
 
-#belief$Z_FwordSpan = (belief$FwordSpan - mean(belief$FwordSpan))/sd(belief$FwordSpan)
+belief$Z_FwordSpan = (belief$FwordSpan - mean(belief$FwordSpan))/sd(belief$FwordSpan)
 
-#belief$Z_BwordSpan = (belief$BwordSpan - mean(belief$BwordSpan))/sd(belief$BwordSpan)
+belief$Z_BwordSpan = (belief$BwordSpan - mean(belief$BwordSpan))/sd(belief$BwordSpan)
 
 ##Combine tasks for composite score
-#belief$FWDcompositehlp = (belief$Z_Fcorsi._hlp + belief$Z_FwordSpan)/2
+belief$FWDcompositehlp = (belief$Z_Fcorsi._hlp + belief$Z_FwordSpan)/2
 
-#belief$BWDcompositehlp = (belief$Z_Bcorsi_hlp + belief$Z_BwordSpan)/2
+belief$BWDcompositehlp = (belief$Z_Bcorsi_hlp + belief$Z_BwordSpan)/2
 
 ```
 
@@ -549,18 +549,18 @@ summary(lm.TOMloc)
 
 ```{r}
 
-sjt.corr(belief[, c(52:64)],missingDeletion = "pairwise",corMethod = "pearson", triangle = "lower")
+#sjt.corr(belief[, c(52:64)],missingDeletion = "pairwise",corMethod = "pearson", triangle = "lower")
 
-sjt.corr(belief[, c(4,59,60,61,62,63,64,66,67,69,70,71,79,80,93,95)], missingDeletion = "pairwise", corMethod = "pearson", triangle = "lower")
+#sjt.corr(belief[, c(4,59,60,61,62,63,64,66,67,69,70,71,79,80,93,95)], missingDeletion = "pairwise", corMethod = "pearson", triangle = "lower")
 
 #TD <- tapply(belief$ToMComposite, belief$TaskOrder, summary)
 
-TD <- ddply(belief, .(TaskOrder), summarise, mean = mean(ToMComposite, na.rm = TRUE), sd = sd(ToMComposite, na.rm = TRUE))
+#TD <- ddply(belief, .(TaskOrder), summarise, mean = mean(ToMComposite, na.rm = TRUE), sd = sd(ToMComposite, na.rm = TRUE))
 
-View(TD)
+#View(TD)
 
-lm.task <- lm(ToMComposite ~ TaskOrder, data = belief)
-summary(lm.task)
+#lm.task <- lm(ToMComposite ~ TaskOrder, data = belief)
+#summary(lm.task)
 
 
 #Factor Analyses using raw scores
@@ -815,8 +815,6 @@ lm.reasonL = lm(PARM2L ~ zBWord +AgeMonths, data = belief)
 summary(lm.reasonL) #Significant
 
 
-
-
 #ToMComp Predicted by WM within age groups
 #Corsi
 lm.age4 = lm(ToMCompositeC ~ zBCorsi, data = Age4)
@@ -1048,5 +1046,7 @@ plot(fit)
 
 View(belief)
 
+
+write.csv(belief, file = "belief.csv")
 
 ```
