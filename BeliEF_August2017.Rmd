@@ -1,0 +1,1052 @@
+---
+title: "BeliEF_April2017"
+output: html_document
+---
+Load libraries
+```{r}
+#load libraries:
+library(ggplot2) 
+library(tidyr)
+library(foreign)
+library(doBy)
+library(dplyr) 
+library(reshape2)
+library(PMCMR)
+library(fifer)
+library(psych)
+library(pwr)
+library(Hmisc)
+library(sm)
+library(sjmisc)
+library(sjPlot)
+library(readr)
+```
+
+Read in Data set, approrpiate variables and Z score WM taks look for normality
+```{r, echo=FALSE, warningTRUE, message=FALSE}
+#############
+#Set Up Data#
+#############
+
+#Read In Data
+belief <- read_csv("C:/Users/Asemenov/Google Drive/BeliEF Study/BeliEF Data_FINAL.csv")
+View(belief)
+
+#Factor Individual Subjects
+class(belief$Subject) #Integer
+belief$Subject <- factor(belief$Subject)
+
+#Create Z-Score Values
+belief$zFCorsi <- scale(belief$FCorsiCal, center = TRUE)
+belief$zBCorsi <- scale(belief$BCorsiCal, center = TRUE)
+belief$zFCorsiProd <- scale(belief$FCorsiProduct, center = TRUE)
+belief$zBCorsiProd <- scale(belief$BCorsiProduct, center = TRUE)
+belief$zBWord <- scale(belief$BwordSpan, center = TRUE)
+belief$zFWord <- scale(belief$FwordSpan, center = TRUE)
+
+#Create Age Factors for 4-year-olds and 5-year-olds
+belief$Age = factor(belief$AgeYear,
+                              labels = c("4", 
+                                         "5"))
+#Factor Gender
+belief$Gender = factor(belief$Gender)
+```
+
+Code to exclude participants who answered a control question incorrectly.
+This code creates new Test Question variable (in future use these Test questions not the TB2_Loc_Test, for example)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+#################################################################################
+##If Participants answer control question incorrectly, exclude that participant.#
+##T(rue)B(elief)L(location)C(ontrol)Q(uestion)1, 2, 3 are control questions######
+#TBLCQ is the sum of the three control questions#################################
+#################################################################################
+
+#True belief location
+TBLCQ = belief$TB2_Loc_CQ1 + belief$TB2_Loc_CQ2 + belief$TB2_Loc_CQ3
+belief$TBLTest<- ifelse((TBLCQ<=2), NA, 
+    ifelse((belief$TB2_Loc_Test==1), 1,
+    ifelse((belief$TB2_Loc_Test==0), 0, NA)))
+
+#True belief contents
+TBCCQ = belief$TB2_Cont_CQ1 + belief$TB2_Cont_CQ2 + belief$TB2_Cont_Infer
+belief$TBCTest<- ifelse((TBCCQ<=2), NA, 
+    ifelse((belief$TB2_Cont_Test==1), 1,
+    ifelse((belief$TB2_Cont_Test==0), 0, NA)))
+
+#2-option False belief location
+belief$FB2LCQ = belief$FB2_Loc_CQ1 + belief$FB2_Loc_CQ2 + belief$FB2_Loc_CQ3 + belief$FB2_Loc_CQ4
+belief$FB2LTest<- ifelse((belief$FB2LCQ<=3), NA, 
+    ifelse((belief$FB2_Loc_Test==1), 1,                    
+    ifelse((belief$FB2_Loc_Test==0), 0, NA)))
+
+#2-option False belief contents
+belief$FB2CCQ = belief$FB2_Cont_CQ1 + belief$FB2_Cont_CQ2 + belief$FB2_Cont_Infer
+belief$FB2CTest<- ifelse((belief$FB2CCQ<=2), NA, 
+    ifelse((belief$FB2_Cont_Test==1), 1,
+    ifelse((belief$FB2_Cont_Test==0), 0, NA)))
+
+#3-option False belief location
+belief$FB3LCQ = belief$FB3_Loc_CQ1 + belief$FB3_Loc_CQ2 + belief$FB3_Loc_CQ3 + belief$FB3_Loc_CQ4
+belief$FB3LTest<- ifelse((belief$FB3LCQ<=3), NA, 
+    ifelse((belief$FB3_Loc_Test==0), 0,                    
+    ifelse((belief$FB3_Loc_Test==1), 1,
+    ifelse((belief$FB3_Loc_Test==2), 2, NA))))
+
+#3-option False belief contents
+belief$FB3CCQ = belief$FB3_Cont_CQ1 + belief$FB3_Cont_CQ2 + belief$FB3_Cont_Infer
+belief$FB3CTest<- ifelse((belief$FB3CCQ<=2), NA, 
+    ifelse((belief$FB3_Cont_Test==0), 0,                    
+    ifelse((belief$FB3_Cont_Test==1), 1,
+    ifelse((belief$FB3_Cont_Test==2), 2, NA))))
+
+#4-option False belief location
+belief$FB4LCQ = belief$FB4_Loc_CQ1 + belief$FB4_Loc_CQ2 + belief$FB4_Loc_CQ3 + belief$FB4_Loc_CQ4 + belief$FB4_Loc_CQ5
+belief$FB4LTest<- ifelse((belief$FB4LCQ<=4), NA, 
+    ifelse((belief$FB4_Loc_Test==0), 0,                    
+    ifelse((belief$FB4_Loc_Test==1), 1,
+    ifelse((belief$FB4_Loc_Test==2), 2, NA))))
+
+#4-option False belief contents
+belief$FB4CCQ = belief$FB4_Cont_CQ1 + belief$FB4_Cont_CQ2 + belief$FB4_Cont_CQ3 + belief$FB4_Cont_Infer
+belief$FB4CTest<- ifelse((belief$FB4CCQ<=3), NA, 
+    ifelse((belief$FB4_Cont_Test==0), 0,                    
+    ifelse((belief$FB4_Cont_Test==1), 1,
+    ifelse((belief$FB4_Cont_Test==2), 2, NA))))
+```
+
+Create variable to indicate PAR/RR/BR reasoner. 
+RR = Score 1 on TB and 0 on FB
+PAR = Score 0 on TB and 1 on FB
+BR = Score 1 on TB and 1 on FB
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+########################################################################################
+#PAR METHOD 2 Contents Task 
+########################################################################################
+belief$PARM2C<- ifelse((belief$TB2_Cont_Test==0) & (belief$FB2_Cont_Test==0), 0, 
+    ifelse((belief$TB2_Cont_Test==0) & (belief$FB2_Cont_Test==1), 2,
+    ifelse((belief$TB2_Cont_Test==1) & (belief$FB2_Cont_Test==1), 1, NA)))
+
+belief$PARM2CF = factor(belief$PARM2C,
+                     labels = c("RR", 
+                                "BR", 
+                                "PAR"))
+
+tblPARM2C = table(belief$AgeYear, belief$PARM2C)
+tblPARM2C #gives counts for each age and reasoning strategy
+chisq.test(tblPARM2C) #not significant
+
+########################################################################################
+#PAR METHOD 2 Location Task 
+########################################################################################
+belief$PARM2L<- ifelse((belief$TB2_Loc_Test==0) & (belief$FB2_Loc_Test==0), 0, 
+    ifelse((belief$TB2_Loc_Test==0) & (belief$FB2_Loc_Test==1), 2,
+    ifelse((belief$TB2_Loc_Test==1) & (belief$FB2_Loc_Test==1), 1, NA)))
+
+belief$PARM2LF = factor(belief$PARM2L,
+                     labels = c("RR", 
+                                "BR", 
+                                "PAR"))
+
+tblPARM2L = table(belief$AgeYear, belief$PARM2L)
+tblPARM2L #gives counts for each age and reasoning strategy
+chisq.test(tblPARM2L) #not significant
+
+##Correlation between the two methods
+#belief$PARM2a doesn't exist...
+#cor.test(belief$PARM2a, belief$PARM2b, na.rm=TRUE) #significantly correlated
+
+#Aggregate PARM2a and PARM2b (note: the difference was using location TB and contents TB)
+#NOTE: Haven't figured out the best way to do this yet. 
+```
+
+##Theory of Mind Performance on 3- and 4-option tasks by age
+Note: This shows the proportion of children who chose the false belief option when they avoided the reality option (false belief divided by false belief plus irrelevant). PAR predicts .50, BR predicts 1.00. 
+
+```{r}
+########################################################################################
+#create new non-reality variable:
+#These re-code:   belief response [1] to belief response [1]
+#             irrelevant response [2] to      irrelevant [0]
+#               reality responses [0] to         missing [NA]
+########################################################################################
+library(plyr)
+belief$FB3_LOC_NR = as.numeric(revalue(as.character(belief$FB3_Loc_Test), c("1" = "1", "2" = "0","0" = NA)))
+belief$FB3_Cont_NR = as.numeric(revalue(as.character(belief$FB3_Cont_Test), c("1" = "1", "2" = "0","0" = NA)))
+belief$FB4_LOC_NR = as.numeric(revalue(as.character(belief$FB4_Loc_Test), c("1" = "1", "2" = "0","0" = NA)))
+belief$FB4_Cont_NR = as.numeric(revalue(as.character(belief$FB4_Cont_Test), c("1" = "1", "2" = "0", "0" = NA)))
+
+describe.by(belief$FB3_LOC_NR, belief$Age, na.rm=TRUE) #confirms %s used below.
+
+###Proportion 4 and 5 year olds providing FB option when they avoided reality: FB/(FB+IRR)
+
+#3-option LOCATION
+E = xtabs(~AgeYear+FB3_LOC_NR,data=belief)
+E
+
+chisq <- xtabs(~AgeYear+PARM2L, data = belief)
+chisq
+
+FB3LBR4 = data.frame("Age" = 4,
+                 "Task" = "3-Option Location",
+                 "Prop" = E[1,2]/(E[1,1]+E[1,2])
+)
+
+FB3LBR5 = data.frame("Age" = 5,
+                 "Task" = "3-Option Location",
+                 "Prop" = E[2,2]/(E[2,1]+E[2,2])
+)
+#4-option LOCATION
+H = xtabs(~AgeYear+FB4_LOC_NR,data=belief)
+H
+FB4LBR4 = data.frame("Age" = 4,
+                 "Task" = "4-Option Location",
+                 "Prop" = H[1,2]/(H[1,1]+H[1,2])
+)
+FB4LBR5 = data.frame("Age" = 5,
+                 "Task" = "4-Option Location",
+                 "Prop" = H[2,2]/(H[2,1]+H[2,2])
+)
+
+H
+
+#3-option CONTENTS
+G = xtabs(~AgeYear+FB3_Cont_NR,data=belief)
+G
+FB3CBR4 = data.frame("Age" = 4,
+                 "Task" = "3-Option Contents",
+                 "Prop" = G[1,2]/(G[1,1]+G[1,2])
+)
+FB3CBR5 = data.frame("Age" = 5,
+                 "Task" = "3-Option Contents",
+                 "Prop" = G[2,2]/(G[2,1]+G[2,2])
+)
+#4-option CONTENTS
+I = xtabs(~AgeYear+FB4_Cont_NR,data=belief)
+I
+FB4CBR4 = data.frame("Age" = 4,
+                 "Task" = "4-Option Contents",
+                 "Prop" = I[1,2]/(I[1,1]+I[1,2])
+)
+FB4CBR5 = data.frame("Age" = 5,
+                 "Task" = "4-Option Contents",
+                 "Prop" = I[2,2]/(I[2,1]+I[2,2])
+)
+
+#Rbind dataframes together:
+NONREALITY2 = rbind(FB3LBR4, FB3LBR5, FB4LBR4, FB4LBR5,
+                    FB3CBR4, FB3CBR5, FB4CBR4, FB4CBR5)
+ View(NONREALITY2)
+ 
+#Factor vars for graphing
+NONREALITY2$Age = factor(NONREALITY2$Age,
+                     labels = c("4", 
+                                "5"))
+#Graph
+ggplot(NONREALITY2, aes(x=Task, y=Prop, colour=Age)) + 
+  geom_point() +  
+  geom_line(aes(group=Age))+
+  coord_cartesian(ylim=c(0,1)) +
+  geom_hline(yintercept=.5, linetype="dashed")+
+  ggtitle("Proportion of children who chose the false belief option when they avoided the reality option (FB/(FB+IRR)) \n and the value predicted if they used PAR")
+
+```
+
+##Combining data based on previous graph
+Note: In the graph above, the proportion of 4 year olds and proportion of 5 year olds passing tasks was similar for location vs. contents - the following code combines 3 and 4 option location and combine 3 and 4 option contents
+
+
+```{r}
+########COMBINE LOCATION:########
+LOC4 = data.frame("Age" = 4,
+                 "Task" = "Location",
+                 "Prop" = (E[1,2] + H[1,2])/(E[1,1]+E[1,2]+H[1,1]+H[1,2])
+)
+LOC5 = data.frame("Age" = 5,
+                 "Task" = "Location",
+                 "Prop" = (E[2,2]+H[2,2])/(E[2,1]+E[2,2]+H[2,1]+H[2,2])
+)
+LocAll = E + H
+LocAll
+########COMBINE Contents:########
+CONT4 = data.frame("Age" = 4,
+                 "Task" = "Contents",
+                 "Prop" = (G[1,2]+I[1,2])/(G[1,1]+G[1,2]+I[1,1]+I[1,2])
+)
+CONT5 = data.frame("Age" = 5,
+                 "Task" = "Contents",
+                 "Prop" = (G[2,2]+I[2,2])/(G[2,1]+G[2,2]+I[2,1]+I[2,2])
+)
+ContAll = G + I
+ContAll
+####### NEW GRAPH WITH COMBINED TASKS #######
+#Rbind dataframes together:
+NONREALITYCombined = rbind(LOC4, LOC5, CONT4, CONT5)
+ 
+#Factor vars for graphing/analysis
+NONREALITYCombined$Age = factor(NONREALITYCombined$Age,
+                     labels = c("4", 
+                                "5"))
+NONREALITYCombined$Task = factor(NONREALITYCombined$Task)
+
+#Graph
+ggplot(NONREALITYCombined, aes(y=Prop, x=Age, fill=Task)) + 
+ # geom_point() +  
+  geom_bar(position=position_dodge(), stat="Identity")+
+  coord_cartesian(ylim=c(0,1)) +
+  geom_hline(yintercept=.5, linetype="dashed")+
+  scale_fill_grey() +
+  ggtitle("Proportion of children who chose the false belief option when they avoided the reality option (FB/(FB+IRR)) \n and the value predicted if they used PAR")
+
+#################
+#ANALYSIS: want statistics to support graph, contents easier than location and 5s providing BR more frequently than 4s
+#################
+
+#4s v 5s for location and contents; both are significant, suggesting age differences in providing BR
+chisq.test(LocAll) 
+chisq.test(ContAll)
+
+Age4 = belief[which(belief$Age ==4),]
+Age5 = belief[which(belief$Age ==5),]
+#contents v location for 4s
+cont1a = xtabs(~FB4_Cont_NR,data=Age4)
+cont2a = xtabs(~FB3_Cont_NR,data=Age4)
+cont4a = cont1a+cont2a
+
+loc1a = xtabs(~FB4_LOC_NR,data=Age4)
+loc2a = xtabs(~FB3_LOC_NR,data=Age4)
+loc4a = loc1a+loc2a
+
+CvL4 = rbind(cont4a, loc4a)
+CvL4[,-3]
+chisq.test(CvL4)
+
+#contents v location for 5s
+cont1b = xtabs(~FB4_Cont_NR,data=Age5)
+cont2b = xtabs(~FB3_Cont_NR,data=Age5)
+cont4b = cont1b+cont2b
+
+loc1b = xtabs(~FB4_LOC_NR,data=Age5)
+loc2b = xtabs(~FB3_LOC_NR,data=Age5)
+loc4b = loc1b+loc2b
+
+CvL5 = rbind(cont4b, loc4b)
+CvL5[,-3]
+chisq.test(CvL5)
+
+```
+
+##Create ToM Composite Score 
+Can use this composite score and run a regression to see if # of tasks passed (e.g. giving the belief response) was predicted by WM or Reasoning Strategy.
+
+Composite score: calculated by summing the number of tasks passed correctly in the battery. This included 2-opt, 3-opt, and 4-opt False Belief and True Belief Loc/Contents tasks, for a max of 8. 
+
+Scoring of 2-Option Tasks: 
+0 = Irrelevant/Incorrect
+1 = Belief/ Correct
+
+Scoring of 3- and 4-Option Tasks:
+0 = Reality / Incorrect
+1 = Belief / Correct
+2 = Irrelevant/ Incorrect 
+*In order to add up the 1's (Belief responses) without dealing with the 2's (IRR Responses), I re-coded 0 and 2 to 0. 
+
+```{r}
+##Recode:
+belief$FB3_Cont_Comp<- ifelse((belief$FB3_Cont_Test==0), 0, 
+    ifelse((belief$FB3_Cont_Test==2), 0,
+    ifelse((belief$FB3_Cont_Test==1), 1, NA)))
+
+belief$FB3_Loc_Comp<- ifelse((belief$FB3_Loc_Test==0), 0, 
+    ifelse((belief$FB3_Loc_Test==2), 0,
+    ifelse((belief$FB3_Loc_Test==1), 1, NA)))
+
+belief$FB4_Cont_Comp<- ifelse((belief$FB4_Cont_Test==0), 0, 
+    ifelse((belief$FB4_Cont_Test==2), 0,
+    ifelse((belief$FB4_Cont_Test==1), 1, NA)))
+
+belief$FB4_Loc_Comp<- ifelse((belief$FB4_Loc_Test==0), 0, 
+    ifelse((belief$FB4_Loc_Test==2), 0,
+    ifelse((belief$FB4_Loc_Test==1), 1, NA)))
+
+#ToM Composite Score (ALL)
+belief$ToMComposite = belief$TB2_Loc_Test + belief$TB2_Cont_Test + belief$FB2_Loc_Test + belief$FB2_Cont_Test + belief$FB3_Cont_Comp + belief$FB3_Loc_Comp + belief$FB4_Cont_Comp + belief$FB4_Loc_Comp
+
+summary(belief$ToMComposite) #Checking min/max number of tasks passed - looks good.
+xtabs(~Age+ToMComposite,data=belief) #shows number of tasks passed by Age
+
+##Note: I subdivied this for now because I haven't figured out a way to combine PAR Method 2 Location and Contents. 
+#ToM Composite Score (Location)
+belief$ToMCompositeL = belief$TB2_Loc_Test + belief$FB2_Loc_Test + belief$FB3_Loc_Comp + belief$FB4_Loc_Comp
+
+#ToM Composite Score (Contents)
+belief$ToMCompositeC = belief$TB2_Cont_Test + belief$FB2_Cont_Test + belief$FB3_Cont_Comp + belief$FB4_Cont_Comp 
+```
+
+##Working Memory  
+
+Correlation tables for each method of scoring: Span on each trial, Product, and Highest level passed (on both trials)
+```{r}
+#Need to determine if scores on individual tasks are correlated, then standardize (z-score) and create WM Composite
+
+########################################################################################
+#WORKING MEMORY: SPAN 
+########################################################################################
+#correlation table between working memory tasks 
+corr.tableWM = data.frame(
+                  Subject = c(belief$Subject, na.rm=TRUE),
+                  Age = c(belief$AgeYear, na.rm=TRUE),
+                  FcorsiSpan1 = c(belief$FcorsiSpan1, na.rm=TRUE),
+                  FcorsiSpan2 = c(belief$`FcorsiSpan 2`, na.rm=TRUE),
+                  BcorsiSpan1 = c(belief$BcorsiSpan1, na.rm=TRUE),
+                  BcorsiSpan2 = c(belief$BcorsiSpan2, na.rm=TRUE),
+                  FwordSpan = c(belief$FwordSpan, na.rm=TRUE),
+                  BwordSpan = c(belief$BwordSpan, na.rm=TRUE),
+                  CL= c(belief$CL, na.rm=TRUE)
+)
+head(corr.tableWM)
+rcorr(as.matrix(corr.tableWM), type = c("pearson"))
+
+sjt.corr(corr.tableWM)
+
+
+##Mean Scores 
+WM_Means = aggregate(cbind(FcorsiSpan1, `FcorsiSpan 2`, BcorsiSpan1, BcorsiSpan2, FwordSpan, BwordSpan, CL)~Age, data=belief, mean, na.rm=TRUE)
+
+WM_Means_long <- melt(WM_Means, id.vars = "Age", 
+                        measure.vars = c("FcorsiSpan1", "FcorsiSpan 2", "BcorsiSpan1", "BcorsiSpan2", "FwordSpan", "BwordSpan", "CL"))
+
+ggplot(WM_Means_long, aes(y = value, x = variable, colour = as.factor(Age))) +
+  geom_point() +
+  geom_line(aes(group = Age)) +
+  scale_color_discrete(name="Age")+
+  xlab("Working Memory Task") +
+  ylab("Mean WM Score") +
+  coord_cartesian(ylim = c(0, 5)) 
+########################################################################################
+#WORKING MEMORY: PRODUCTS
+#log transform the product scores and z-score them to create the composite score
+########################################################################################
+#correlation table between working memory tasks 
+#corr.tableWMproduct = data.frame(
+#                 Subject = c(belief$Subject, na.rm=TRUE),
+#                  Age = c(belief$AgeYear, na.rm=TRUE),
+#                  Fcorsi_product1 = c(belief$Fcorsi_product1, na.rm=TRUE),
+#                  Fcorsi_product2 = c(belief$Fcorsi_product2, na.rm=TRUE),
+#                  Bcorsi_product1 = c(belief$Bcorsi_product1, na.rm=TRUE),
+#                  Bcorsi_product2 = c(belief$Bcorsi_product2, na.rm=TRUE),
+#                  Fword_product = c(belief$Fword_product, na.rm=TRUE),
+#                  Bword_product = c(belief$Bword_product, na.rm=TRUE),
+#                  CL= c(belief$CL, na.rm=TRUE)
+#)
+#head(corr.tableWMproduct)
+#rcorr(as.matrix(corr.tableWMproduct), type = c("pearson"))
+
+########################################################################################
+#WORKING MEMORY: HIGHEST LEVEL PASSED
+########################################################################################
+#correlation table between working memory tasks 
+corr.tableWMhlp = data.frame(
+                  Subject = c(belief$Subject, na.rm=TRUE),
+                  Age = c(belief$AgeYear, na.rm=TRUE),
+                  Fcorsi._hlp = c(belief$Fcorsi._hlp, na.rm=TRUE),
+                  Bcorsi_hlp = c(belief$Bcorsi_hlp, na.rm=TRUE),
+                  FwordSpan = c(belief$FwordSpan, na.rm=TRUE),
+                  BwordSpan = c(belief$BwordSpan, na.rm=TRUE),
+                  CL= c(belief$CL, na.rm=TRUE)
+)
+head(corr.tableWMhlp)
+rcorr(as.matrix(corr.tableWMhlp), type = c("pearson"))
+
+#Z-score tasks
+#belief$Z_Fcorsi._hlp = (belief$Fcorsi_hlp - mean(belief$Fcorsi_hlp))/sd(belief$Fcorsi_hlp)
+
+#belief$Z_Bcorsi_hlp = (belief$Bcorsi_hlp - mean(belief$Bcorsi_hlp))/sd(belief$Bcorsi_hlp)
+
+#belief$Z_FwordSpan = (belief$FwordSpan - mean(belief$FwordSpan))/sd(belief$FwordSpan)
+
+#belief$Z_BwordSpan = (belief$BwordSpan - mean(belief$BwordSpan))/sd(belief$BwordSpan)
+
+##Combine tasks for composite score
+#belief$FWDcompositehlp = (belief$Z_Fcorsi._hlp + belief$Z_FwordSpan)/2
+
+#belief$BWDcompositehlp = (belief$Z_Bcorsi_hlp + belief$Z_BwordSpan)/2
+
+```
+
+Ideas for analysis: 
+1. regression model: reasoning strategy ~ WM + Age 
+2. regression model: reasoning strategy ~ 3 WM tasks individually + Age 
+3. regression model with all orders (dummy coded)
+4. chi square for the PAR specifics vs low/high WM (backward)
+5. regression model / correlations with experimenter 
+
+graph: 
+1. age X axis, proportion Y axis, lines for reasoning strategy
+2. age X axis, proportion passing Y axis, lines or bars for different tasks (2 option vs. 3&4option/ subdivide by contents vs. location if needed)
+
+##Preliminary Analysis of Theory of Mind Tasks
+
+
+```{r}
+#Means on 2-option tasks
+TOM_Means = aggregate(cbind(TBLTest, TBCTest, FB2LTest, FB2CTest)~Age, data=belief, mean, na.rm=TRUE)
+
+
+#correlation table between theory of mind tasks and reasoning strategy 
+#corr.tableToM2opt = data.frame(
+#                  Subject = c(belief$Subject),
+#                  Age = c(belief$Age),
+#                  TBLTest = c(belief$TBLTest),
+#                  TBCTest = c(belief$TBCTest),
+#                  FB2LTest = c(belief$FB2LTest),
+#                  FB2CTest = c(belief$FB2CTest),
+#                  PARM1 = c(belief$PARM1),
+#                  PARM2a = c(belief$PARM2a),
+#                  PARM2b = c(belief$PARM2b)
+#)
+#head(corr.tableToM2opt)
+
+#rcorr(as.matrix(corr.tableToM2opt), type = c("pearson"))
+
+xtabs(~TBLTest+FB2LTest+Age,data=belief)
+xtabs(~TBCTest+FB2CTest+Age,data=belief)
+
+##Graph mean performance on 2-option tasks
+TOM_Means_long <- melt(TOM_Means, id.vars = "Age", 
+                        measure.vars = c("TBLTest", "TBCTest", "FB2LTest", "FB2CTest"))
+
+#Graph
+ggplot(TOM_Means_long, aes(y=value, x=Age, fill=variable)) + 
+  geom_bar(position=position_dodge(), stat="Identity")+
+  coord_cartesian(ylim=c(0,1)) +
+  scale_fill_grey() 
+
+#################
+#ANALYSIS
+#################
+
+
+```
+
+
+## Analysis 1: Does Working Memory or Reasoning Strategy predict Number of Tasks passed in the ToM battery?
+
+
+```{r}
+#################
+#ANALYSIS 1: Use TOM composite and see if WM or Reasoning Strategy predicts # of tasks passed
+#################
+lm.TOMcont = lm(ToMCompositeC ~ BWDcompositehlp + PARM2CF, data=belief)
+summary(lm.TOMcont)
+
+lm.TOMloc = lm(ToMCompositeL ~ BWDcompositehlp + PARM2LF, data=belief)
+summary(lm.TOMloc)
+
+```
+
+## Working Memory Component
+
+```{r}
+
+sjt.corr(belief[, c(52:64)],missingDeletion = "pairwise",corMethod = "pearson", triangle = "lower")
+
+sjt.corr(belief[, c(4,59,60,61,62,63,64,66,67,69,70,71,79,80,93,95)], missingDeletion = "pairwise", corMethod = "pearson", triangle = "lower")
+
+#TD <- tapply(belief$ToMComposite, belief$TaskOrder, summary)
+
+TD <- ddply(belief, .(TaskOrder), summarise, mean = mean(ToMComposite, na.rm = TRUE), sd = sd(ToMComposite, na.rm = TRUE))
+
+View(TD)
+
+lm.task <- lm(ToMComposite ~ TaskOrder, data = belief)
+summary(lm.task)
+
+
+#Factor Analyses using raw scores
+#wm <- subset(belief[, c(52:63)])
+
+#fit <- princomp(wm, cor = TRUE)
+#summary(fit)
+#loadings(fit)
+
+#plot(fit, type = "lines")
+
+#fit$scores
+
+#biplot(fit)
+
+#wmcor <- cor(wm)
+
+#fit1<-principal(wmcor, nfactors = 1, rotate = "varimax")
+#fit1
+#fit2<-principal(wmcor, nfactors = 2, rotate = "varimax")
+#fit2
+#fit3<-principal(wmcor, nfactors = 3, rotate = "varimax")
+#fit3
+#fit4<-principal(wmcor, nfactors = 4, rotate = "varimax")
+#fit4
+
+```
+
+## Examine task order differences in ToM tasks
+
+```{r}
+#Pay attention to orders 6, 8
+TBLOrder <- ddply(belief, .(TaskOrder), summarise, meanTBL = mean(TBLTest, na.rm = TRUE), sdTBL = sd(TBLTest, na.rm = TRUE), sumTBL = sum(TBLTest, na.rm = TRUE))
+TBCOrder <- ddply(belief, .(TaskOrder), summarise, meanTBC = mean(TBCTest, na.rm = TRUE), sdTBC = sd(TBCTest, na.rm = TRUE), sumTBC = sum(TBCTest, na.rm = TRUE))
+FB2LOrder <- ddply(belief, .(TaskOrder), summarise, meanFB2L = mean(FB2LTest, na.rm = TRUE), sdFB2L = sd(FB2LTest, na.rm = TRUE), sumFB2L = sum(FB2LTest, na.rm = TRUE))
+FB2COrder <- ddply(belief, .(TaskOrder), summarise, meanFB2C = mean(FB2CTest, na.rm = TRUE), sdFB2C = sd(FB2CTest, na.rm = TRUE), sumFB2C = sum(FB2CTest, na.rm = TRUE))
+FB3LOrder <- ddply(belief, .(TaskOrder), summarise, meanFB3L = mean(FB3LTest, na.rm = TRUE), sdFB3L = sd(FB3LTest, na.rm = TRUE), sumFB3L = sum(FB3LTest, na.rm = TRUE))
+FB3COrder <- ddply(belief, .(TaskOrder), summarise, meanFB3C = mean(FB3CTest, na.rm = TRUE), sdFB3C = sd(FB3CTest, na.rm = TRUE), sumFB3C = sum(FB3CTest, na.rm = TRUE))
+FB4LOrder <- ddply(belief, .(TaskOrder), summarise, meanFB4L = mean(FB4LTest, na.rm = TRUE), sdFB4L = sd(FB4LTest, na.rm = TRUE), sumFB4L = sum(FB4LTest, na.rm = TRUE))
+FB4COrder <- ddply(belief, .(TaskOrder), summarise, meanFB4C = mean(FB4CTest, na.rm = TRUE), sdFB4C = sd(FB4CTest, na.rm = TRUE), sumFB4C = sum(FB4CTest, na.rm = TRUE))
+
+belief$Age<-as.factor(belief$Age)
+belief$TaskOrder <- as.factor(belief$TaskOrder)
+
+ggplot(belief, aes(y=ToMComposite, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=FB2CTest, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=FB2LTest, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=zBCorsi, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot", na.rm = TRUE)
+ggplot(belief, aes(y=zFCorsi, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot", na.rm = TRUE)
+ggplot(belief, aes(y=zBCorsi, x=Age))+ 
+  geom_boxplot(stat = "boxplot", na.rm = TRUE)
+ggplot(belief, aes(y=zFCorsi, x=Age))+ 
+  geom_boxplot(stat = "boxplot", na.rm = TRUE)
+
+ggplot(belief, aes(y=BwordSpan, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=ToMCompositeC, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=ToMCompositeL, x=Age, fill=TaskOrder))+ 
+  geom_boxplot(stat = "boxplot")
+```
+
+```{r}
+lm.ToM <- lm(ToMComposite ~ zBCorsi + Age, data = belief)
+
+#lm.ToM4 <- lm(ToMComposite ~ zBCorsi, data = Age4)
+#summary(lm.ToM4)
+
+lm.ToM2 <- lm(ToMComposite ~ zFCorsi + Age, data = belief)
+summary(lm.ToM2)
+  
+lm.ToM3 <- lm(FB3LTest ~ zBCorsi, data = belief)
+summary(lm.ToM3)
+lm.ToM4 <- lm(FB3CTest ~ zBCorsi + Age, data = belief)
+summary(lm.ToM4)
+lm.ToM5 <- lm(FB4LTest ~ zBCorsi + Age, data = belief)
+summary(lm.ToM5)
+lm.ToM6 <- lm(FB4CTest ~ zBCorsi + Age, data = belief)
+summary(lm.ToM6)
+
+lm.wm <- lm(zBCorsi ~ AgeMonths, data = belief)
+summary(lm.wm)
+
+#Look at scatterplot difference for prod vs. loaded
+
+summary(belief$zBCorsiProd)
+summary(belief$zBCorsi)
+
+#Back Corsi
+ggplot(belief, aes(x = AgeMonths, y = zBCorsi))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("Calculated Score Under Load")+
+  theme_bw()
+
+ggplot(belief, aes(x = AgeMonths, y = zBCorsiProd))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("Assumed Product Score")+
+  theme_bw()
+
+ggplot(belief, aes(x = AgeMonths, y = Bcorsi_hlp))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("HighestLevelPassed")+
+  theme_bw()
+
+#Forward Corsi
+ggplot(belief, aes(x = AgeMonths, y = zFCorsi))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("Calculated Score Under Load")+
+  theme_bw()
+
+ggplot(belief, aes(x = AgeMonths, y = zFCorsiProd))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("Assumed Product Score")+
+  theme_bw()
+
+ggplot(belief, aes(x = AgeMonths, y = Fcorsi_hlp))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("HighestLevelPassed")+
+  theme_bw()
+
+ggplot(belief, aes(x = zFCorsi, y = zBCorsi))+
+  geom_point()+
+  geom_smooth()+
+  ggtitle("Fwd/Bwd Corsi")+
+  theme_bw()
+
+ggplot(belief, aes(x = zBWord, y = zBCorsi))+
+  geom_point()+
+  ggtitle("Fwd/Bwd Corsi")+
+  theme_bw()
+ggplot(belief, aes(x = zFWord, y = zFCorsi))+
+  geom_point()+
+  ggtitle("Fwd/Bwd Corsi")+
+  theme_bw()
+ggplot(belief, aes(x = zBWord, y = zFWord))+
+  geom_point()+
+  ggtitle("Fwd/Bwd Corsi")+
+  theme_bw()
+
+cor(belief$zBCorsi, belief$Bcorsi_hlp)
+cor(belief$zBCorsiProd, belief$Bcorsi_hlp)
+cor(belief$zBCorsi, belief$zBCorsiProd)
+cor(belief$zFCorsi, belief$Fcorsi._hlp)
+cor(belief$zFCorsiProd, belief$Fcorsi._hlp)
+cor(belief$zFCorsi, belief$zFCorsiProd)
+cor(belief$BwordSpan, belief$Bcorsi_hlp)
+
+ggplot(belief, aes(x = AgeMonths, y = BCorsiCal))+
+  geom_point()+
+  geom_smooth()+
+  theme_bw()
+ggplot(belief, aes(x = AgeMonths, y = BCorsiProduct))+
+  geom_point()+
+  theme_bw()
+
+#PRedict movement in PAR with WM More WM = more BR?
+
+belief$PARM2LF <- as.factor(belief$PARM2LF)
+
+
+ggplot(belief, aes(x = PARM2LF, y = zBCorsi, fill = Age))+
+ geom_boxplot(stat = "boxplot")
+
+ggplot(belief, aes(x = PARM2CF, y = zBCorsi, fill = Age))+
+ geom_boxplot(stat = "boxplot")
+
+lm.par <- lm(PARM2L ~ zBCorsi, data = belief)
+summary(lm.par)
+lm.par2 <- lm(PARM2C ~ zBCorsi, data = belief)
+summary(lm.par2)
+
+lm.fb4C <- lm(FB4CTest ~ zBCorsi, data = belief)
+summary(lm.fb4C)
+lm.fb4L <- lm(FB4LTest ~ zBCorsi, data = belief)
+summary(lm.fb4L)
+
+#####Significant, controlling for Age
+lm.fb3C <- lm(FB3CTest ~ zBCorsi + Age, data = belief)
+summary(lm.fb3C)
+######
+
+lm.fb3L <- lm(FB3LTest ~ zBCorsi, data = belief)
+summary(lm.fb3L)
+
+
+lm.fb2L <- lm(FB2LTest ~ zBCorsi, data = belief)
+summary(lm.fb2L)
+
+lm.fb2c <- lm(FB2CTest ~ zBCorsi, data = belief)
+summary(lm.fb2c)
+
+lm.tbl <- lm(TBLTest ~ zBCorsi, data = belief)
+summary(lm.tbl)
+
+lm.tbc <- lm(TBCTest ~ zBCorsi, data = belief)
+summary(lm.tbc)
+
+lm.comp <- lm(ToMComposite ~ zBCorsi + Age, data = belief)
+summary(lm.comp)
+
+lm.compL <- lm(ToMCompositeL ~ zBCorsi, data = belief)
+summary(lm.compL)
+
+lm.compC <- lm(ToMCompositeC ~ zBCorsi + AgeMonths, data = belief)
+summary(lm.compC)
+
+#true belief questions
+belief$TBComp <- belief$TBLTest + belief$TBCTest
+
+head(belief$TBComp)
+
+lm.tbcomp <- lm(TBComp ~ Age, data = belief)
+summary(lm.tbcomp)
+
+lm.tbcomp2 <- lm(TBComp ~ TaskOrder, data = belief)
+summary(lm.tbcomp2)
+
+ggplot(belief, aes(x = TaskOrder, y = TBComp))+
+  geom_bar(stat = "identity")+
+  theme_bw()
+
+
+
+summary(belief$TBComp)
+
+summary(belief$TaskOrder)
+
+ggplot(belief, aes(x = Age, y = TBComp))+
+  geom_bar(stat = "identity")+
+  theme_bw()
+
+class(belief$PARM2LF)
+
+#Order 6 for 4 year olds shows unique relationship, order 8 for 5 year olds
+
+#Reasoning Strat predicted by wm
+
+lm.reason = lm(PARM2C ~ zBWord, data = belief)
+summary(lm.reason)
+lm.reasonL = lm(PARM2L ~ zBWord +AgeMonths, data = belief)
+summary(lm.reasonL) #Significant
+
+
+
+
+#ToMComp Predicted by WM within age groups
+#Corsi
+lm.age4 = lm(ToMCompositeC ~ zBCorsi, data = Age4)
+summary(lm.age4)
+lm.age5 = lm(ToMCompositeC ~ zBCorsi, data = Age5)
+summary(lm.age5)
+
+lm.age4L = lm(ToMCompositeL ~ zBCorsi, data = Age4)
+summary(lm.age4L)
+lm.age5L = lm(ToMCompositeL ~ zBCorsi, data = Age5)
+summary(lm.age5L)
+
+#Word
+lm.age4W = lm(ToMCompositeC ~ zBWord, data = Age4)
+summary(lm.age4W)
+lm.age5W = lm(ToMCompositeC ~ zBWord, data = Age5)
+summary(lm.age5W)
+
+lm.age4WL = lm(ToMCompositeL ~ zBWord, data = Age4)
+summary(lm.age4WL)
+lm.age5WL = lm(ToMCompositeL ~ zBWord, data = Age5)
+summary(lm.age5WL)
+
+
+#Is reasoning strat predicted by WM in age groups?
+#Corsi
+lm.age4reason = lm(PARM2C ~ zBCorsi, data = Age4)
+summary(lm.age4reason)
+lm.age4reasonL = lm(PARM2L ~ zBCorsi, data = Age4)
+summary(lm.age4reasonL)
+
+lm.age5reason = lm(PARM2C ~ zBCorsi, data = Age5)
+summary(lm.age5reason)
+lm.age5reasonL = lm(PARM2L ~ zBCorsi, data = Age5)
+summary(lm.age5reasonL)
+
+#word
+
+lm.age4reasonW = lm(PARM2C ~ zBWord, data = Age4)
+summary(lm.age4reasonW)
+lm.age4reasonLW = lm(PARM2L ~ zBWord, data = Age4)
+summary(lm.age4reasonLW) #Significant
+
+lm.age5reasonW = lm(PARM2C ~ zBWord, data = Age5)
+summary(lm.age5reasonW)
+lm.age5reasonLW = lm(PARM2L ~ zBWord, data = Age5)
+summary(lm.age5reasonLW)
+
+```
+
+
+What about 3 + 4 option specific performance
+```{r}
+#2 option fbC
+lm.2fbC4 = lm(FB2CTest ~ zBCorsi, data = Age4)
+summary(lm.2fbC4)
+
+lm.2fbC5 = lm(FB2CTest ~ zBCorsi, data = Age5)
+summary(lm.2fbC5)
+
+#Word
+lm.2fbC4W = lm(FB2CTest ~ zBWord, data = Age4)
+summary(lm.3fbC4W) #significant
+
+lm.2fbC5W = lm(FB2CTest ~ zBWord, data = Age5)
+summary(lm.3fbC5W)
+
+#2 option fbL
+#Corsi
+lm.2fbL4 = lm(FB2LTest ~ zBCorsi, data = Age4)
+summary(lm.2fbL4)
+
+lm.2fbL5 = lm(FB2LTest ~ zBCorsi, data = Age5)
+summary(lm.2fbL5)
+
+#Word
+lm.2fbC4W = lm(FB2CTest ~ zBWord, data = Age4)
+summary(lm.2fbC4W)
+
+lm.2fbC5W = lm(FB2CTest ~ zBWord, data = Age5)
+summary(lm.2fbC5W)
+
+#3 option task
+#Corsi
+lm.3fbC4 = lm(FB3CTest ~ zBCorsi, data = Age4)
+summary(lm.3fbC4)
+
+lm.3fbC5 = lm(FB3CTest ~ zBCorsi, data = Age5)
+summary(lm.3fbC5)
+
+#Word
+lm.3fbC4W = lm(FB3CTest ~ zBWord, data = Age4)
+summary(lm.3fbC4W)
+
+lm.3fbC5W = lm(FB3CTest ~ zBWord, data = Age5)
+summary(lm.3fbC5W)
+
+# 4 option task
+#Corsi
+lm.4fbC4 = lm(FB4CTest ~ zBCorsi, data = Age4)
+summary(lm.4fbC4)
+
+lm.4fbC5 = lm(FB4CTest ~ zBCorsi, data = Age5)
+summary(lm.4fbC5)
+
+#Word
+lm.4fbC4W = lm(FB4CTest ~ zBWord, data = Age4)
+summary(lm.4fbC4W)
+
+lm.4fbC5W = lm(FB4CTest ~ zBWord, data = Age5)
+summary(lm.4fbC5W)
+
+
+#Location
+
+#3 Option tasks
+#Corsi
+lm.3fbL4 = lm(FB3LTest ~ zBCorsi, data = Age4)
+summary(lm.3fbL4)
+
+lm.3fbL5 = lm(FB3LTest ~ zBCorsi, data = Age5)
+summary(lm.3fbL5)
+
+#Word
+lm.3fbL4W = lm(FB3LTest ~ zBWord, data = Age4)
+summary(lm.3fbL4W)
+
+lm.3fbL5W = lm(FB3LTest ~ zBWord, data = Age5)
+summary(lm.3fbL5W)
+
+# 4 option task
+#Corsi
+lm.4fbL4 = lm(FB4LTest ~ zBCorsi, data = Age4)
+summary(lm.4fbL4)
+
+lm.4fbL5 = lm(FB4LTest ~ zBCorsi, data = Age5)
+summary(lm.4fbL5)
+
+#Word
+lm.4fbL4W = lm(FB4LTest ~ zBWord, data = Age4)
+summary(lm.4fbL4W)
+
+lm.4fbL5W = lm(FB4LTest ~ zBWord, data = Age5)
+summary(lm.4fbL5W)
+
+
+
+
+summary(lm.fb3C) #Response on FB 3C Test predicted by corsi 
+
+
+
+#Multiple regresseion
+#Stepwise
+fit1 <- lm(ToMCompositeL ~ AgeMonths, data = belief)
+fit2 <- lm(ToMCompositeL ~ AgeMonths + zBWord, data = belief)
+
+anova(fit1, fit2)
+fit1C <- lm(ToMCompositeC ~ AgeMonths, data = belief)
+fit2C <- lm(ToMCompositeC ~ AgeMonths + zBWord, data = belief)
+
+anova(fit1C, fit2C)
+
+
+
+
+sm.density(belief$AgeMonths, model = "Normal")
+sm.density(belief$zBCorsi, model = "Normal")
+
+lm.wm <- lm(zBCorsi ~ AgeMonths, data = belief)
+summary(lm.wm)
+
+summary(lm.tbc)
+summary(lm.tbl)
+
+sm.density(belief$FCorsiCal)
+sm.density(belief$BCorsiCal)
+
+
+sm.density(Age4$zBCorsi)
+sm.density(Age5$zBCorsi)
+
+as.numeric(belief$zBCorsi)
+as.numeric(belief$zBWord)
+
+
+#WM Composite as a sum of Z Scores 
+
+belief$wmComp <- belief$zBCorsi + belief$zBWord
+
+head(belief)
+
+sm.density(belief$wmComp)
+
+summary(belief$wmComp)
+
+belief$WmCat[belief$wmComp > -.1682] <- "high"
+belief$WmCat[belief$wmComp < -.1682] <- "low"
+head(belief)
+
+summary(belief$AgeMonths)
+belief$AgeCat[belief$AgeMonths < 59.4] <- "young"
+belief$AgeCat[belief$AgeMonths > 59.4] <- "old"
+
+head(belief)
+
+
+ggplot(belief, aes(y=ToMComposite, x=AgeCat, fill = WmCat))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=ToMCompositeC, x=AgeCat, fill = WmCat))+ 
+  geom_boxplot(stat = "boxplot")
+ggplot(belief, aes(y=ToMCompositeL, x=AgeCat, fill = WmCat))+ 
+  geom_boxplot(stat = "boxplot")
+
+ggplot(belief, aes(y=PARM2C, x=AgeCat, fill = WmCat))+ 
+  geom_boxplot(stat = "boxplot")
+
+fit <- lm(ToMComposite ~ wmComp*AgeMonths, data = belief)
+summary(fit)
+
+fit2 <- lm(wmComp ~ AgeMonths, data = belief)
+summary(fit2)
+
+fit3 <- aov(wmComp ~ AgeMonths, data = belief)
+summary(fit3)
+sjp.lm(fit, type = "lm")
+
+plot(fit)
+
+View(belief)
+
+
+```
