@@ -1,0 +1,102 @@
+---
+title: "Belief Analysis"
+author: "Andrei Semenov and Annelise Pesch"
+date: "August 15, 2017"
+output: pdf_document
+---
+
+```{r, echo = FALSE, warning = FALSE, }
+#load libraries:
+library(ggplot2) 
+library(tidyr)
+library(foreign)
+library(doBy)
+library(dplyr) 
+library(reshape2)
+library(PMCMR)
+library(fifer)
+library(psych)
+library(pwr)
+library(Hmisc)
+library(sm)
+library(sjmisc)
+library(sjPlot)
+library(readr)
+
+#load data 
+
+#Cleaned data (already recoded and scaled variables)
+#belief.csv
+
+#Old data file: on Gdrive, beliEF Data _Final.csv
+
+belief <- read_csv("~/BeliefStudy/belief.csv")
+
+######################
+#Variable Explanation#
+######################
+
+#Subject: Participant ID
+#AgeMonths: Age in Months 1 decimal place
+#Age: Age in Year
+#Gender: 0 - Female 1 - Male
+#Experimenter: 0 - Annelise 1- Andrei
+#Task Order: Counterbalaned Task Order 1:8 Task Order followed the following format: [Theory of Mind (C/L):: Working Memory]
+##################################
+#####Working Memory Variables#####
+#####F: forward              #####
+#####B: backword             #####
+#####Measures: Corsi & Word Span##
+##################################
+#FCorsihlp: Forward Corsi Highest Level Passed 1:9
+#BCorsihlp: Backward Corsi Highest Level Passed 1:9
+#FCorsiCal: Corsi Scored by performance under load. Corsi task featured 2 blocks of potential trials for each span length if participants #got the first span length correct, they moved on to the next one, if they failed they got 1 extra "chance" before failing. After failing #twice on a given span length, participants moved on to next block of forward corsi.
+###FCorsi Cal takes (highest span - # of repeated trials under capacity)*highest span
+#BCorsiCal: Same as FCorsi Cal but for backwards Corsi
+#zFCorsi: Z-scored FCorsi Cal
+#zBCorsi: Z-Scored BCorsi Cal
+#zBWord: Z-Scored Backwards word Span Score (total items correct, if first item is correct, credit is given for subsequent items of that #span)
+#zFWord: Same as zBWord but forwards
+#zFCorsihlp: Z-Scored Forward Corsi highest level passed across both blocks
+#zBCorsihlp: same as zFCorsihlp but backwards
+#zFWordSpan: Z-Scored Forward Word highest Span length acheived
+#zBWordSpan: Z-Scored Backward Word highest Span length acheived
+#FWDcompositehlp: composite score of highest level passed: (zFcorsihlp + zFWordSpan)/2
+#BWDcompositehlp: composite score of highest level passed: (zBcorsihlp + zBWordSpan)/2
+##################################
+#####Theory of Mind Variables#####
+#####TB: True Belief         #####
+#####FB: False Belief        #####
+#####PAR: Perceptual Access  #####
+#####L: Location             #####
+#####C: Contents             #####
+#####2/3/4: # of L/C         #####
+##################################
+#TBLTest: Outcome variable for True Belief Location: Derived from:
+#     TBLTest<- ifelse((TBLCQ<=2), NA, 
+        #ifelse((belief$TB2_Loc_Test==1), 1,
+        #ifelse((belief$TB2_Loc_Test==0), 0, NA)))
+# If participants answer control question incorrectly (CQ) then exclude them with NA There are 3 control questions, their sum is criteria
+# 1 is pass, 0 is fail 
+#TBCTest: Outcome variable for True Belief Contesnts:
+#TBCTest<- ifelse((TBCCQ<=2), NA, 
+#    ifelse((belief$TB2_Cont_Test==1), 1,
+#    ifelse((belief$TB2_Cont_Test==0), 0, NA)))
+#FB2LTest: These all follow the same format, checking control questions, if it's anything less than full credit, 0 or NA, passing is a 1
+#PARM1: Perceptual Access Method 1: <Finish>
+#PARM2C PAR method 2 Contents:
+###RR = Score 1 on TB and 0 on FB
+###PAR = Score 0 on TB and 1 on FB
+###BR = Score 1 on TB and 1 on FB
+###NA = NA in any task used to calculate PARM2C
+#PARM2CF: Named version of PARM2C
+#PARM2L: Same as PARM2C but for location
+#PARM2LF: Named version of PARM2L
+#FB3_LOC_NR: Non reality resposne for False belief 3 contents task
+# Belief Response: 1
+# Irrelevant Response: 0
+# Reality Resposne: NA (because this variable is specifically for responses to non-reality variables)
+
+
+
+```
