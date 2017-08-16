@@ -143,37 +143,87 @@ Mean Age (in Months): 60.5 (43 4-year-olds, 42 5-year-olds)
 
 Gender: Males: 38    Females: 47
 
-
-```{r, echo = FALSE}
+```{r, echo = FALSE, fig.width = 6, fig.height = 6, include = FALSE}
 #Look for systematic group differences in gender/age/experimenter/task order
 
 #differences in composites
 #Age v. ToMComposites
-sjp.xtab(belief$ToMCompositeC, belief$Age)
-sjp.xtab(belief$ToMCompositeL, belief$Age)
-sjp.xtab(belief$TBComp, belief$Age)
+sjp.xtab(belief$ToMCompositeC, belief$Age, show.total = FALSE)
+sjp.xtab(belief$ToMCompositeL, belief$Age, show.total = FALSE)
+sjp.xtab(belief$TBComp, belief$Age, show.total = FALSE)
+
+lm.Age1<-lm(ToMCompositeC~Age, data = belief)
+summary(lm.Age1) #Age significantly predicts differences P<.001 Beta = .95
+lm.Age2<-lm(ToMCompositeL~Age, data = belief)
+summary(lm.Age2) #Age significantly predicts differences P<.001 Beta = .83
+lm.Age3<-lm(TBComp~Age, data = belief)
+summary(lm.Age3) #Age is marginally significant P = .08 Beta = .3
+
+#Conclusion, age is a contributing factor to the performance on ToM tasks. 
 
 #Gender v. ToMComposites
-sjp.xtab(belief$ToMCompositeC, belief$Gender)
-sjp.xtab(belief$ToMCompositeL, belief$Gender)
-sjp.xtab(belief$TBComp, belief$Gender)
+sjp.xtab(belief$ToMCompositeC, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$ToMCompositeL, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$TBComp, belief$Gender, show.total = FALSE)
 
+lm.Gender1<-lm(ToMCompositeC~Gender, data = belief)
+summary(lm.Gender1)
+lm.Gender2<-lm(ToMCompositeL~Gender, data = belief)
+summary(lm.Gender2)
+lm.Gender3<-lm(TBComp~Gender, data = belief)
+summary(lm.Gender3)
+#Conclusion, there are no systematic nor statistical differences in ToM tasks between the genders
 
 #Experimenter v. ToMComposites
-sjp.xtab(belief$ToMCompositeC, belief$Experimenter)
-sjp.xtab(belief$ToMCompositeL, belief$Experimenter)
-sjp.xtab(belief$TBComp, belief$Experimenter)
+sjp.xtab(belief$ToMCompositeC, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$ToMCompositeL, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$TBComp, belief$Experimenter, show.total = FALSE)
+
+lm.Exp1<-lm(ToMCompositeC~Experimenter, data = belief)
+summary(lm.Exp1)
+lm.Exp2<-lm(ToMCompositeL~Experimenter, data = belief)
+summary(lm.Exp2)
+lm.Exp3<-lm(TBComp~Experimenter, data = belief)
+summary(lm.Exp3)
+#Conclusion, there are no systematic nor statistical differences in ToM tasks between the two experimenters.
 
 #differences in TB performance
+
 #Age v. ToMComposites
-sjp.xtab(belief$TBComp, belief$Age)
+sjp.xtab(belief$TBComp, belief$Age, show.total = FALSE)
 
 #Gender v. ToMComposites
-sjp.xtab(belief$TBComp, belief$Gender)
+sjp.xtab(belief$TBComp, belief$Gender, show.total = FALSE)
 
 #Experimenter v. ToMComposites
-sjp.xtab(belief$TBComp, belief$Experimenter)
+sjp.xtab(belief$TBComp, belief$Experimenter, show.total = FALSE)
+
 
 
 ```
+
+
+There are differences between ages groups and their performance on ToM tasks:
+
+```{r, echo = FALSE}
+sjp.xtab(belief$ToMComposite, belief$Age, show.total = FALSE)
+```
+
+(8 is passing all ToM tasks, 0 is failing all TOM tasks)
+
+We do not see similar patterns for gender or experimenter
+
+
+```{r, echo = FALSE}
+
+```
+
+
+
+
+
+
+
+
+
    
