@@ -2,7 +2,9 @@
 title: "Belief Analysis"
 author: "Andrei Semenov and Annelise Pesch"
 date: "August 15, 2017"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
@@ -22,6 +24,7 @@ library(sm)
 library(sjmisc)
 library(sjPlot)
 library(readr)
+library(xtable)
 
 #load data 
 
@@ -48,6 +51,10 @@ belief <- read_csv("~/BeliefStudy/belief.csv")
 #####B: backword             #####
 #####Measures: Corsi & Word Span##
 ##################################
+#Fwordraw: Raw "score" for forward word span (total number of correct trials across spans. Getting 1st span in a trial correct counts for all trials correct
+#BWordRaw: Raw score for backword word span
+#FWordSPan: Highest span length passed Forward
+#BWordSpan: Highest span length passed backward
 #FCorsihlp: Forward Corsi Highest Level Passed 1:9
 #BCorsihlp: Backward Corsi Highest Level Passed 1:9
 #FCorsiCal: Corsi Scored by performance under load. Corsi task featured 2 blocks of potential trials for each span length if participants #got the first span length correct, they moved on to the next one, if they failed they got 1 extra "chance" before failing. After failing #twice on a given span length, participants moved on to next block of forward corsi.
@@ -105,7 +112,7 @@ belief <- read_csv("~/BeliefStudy/belief.csv")
 ```
 #Data Analysis
 ##Data Prep
-```{r, echo=FALSE, warning = FALSE}
+```{r, echo=FALSE, warning = FALSE, cache = TRUE}
 ###Preparing and re-classing data###
 
 #Create Age Factors for 4-year-olds and 5-year-olds
@@ -143,7 +150,7 @@ Mean Age (in Months): 60.5 (43 4-year-olds, 42 5-year-olds)
 
 Gender: Males: 38    Females: 47
 
-```{r, echo = FALSE, fig.width = 6, fig.height = 6, include = FALSE}
+```{r, echo = FALSE, fig.width = 6, fig.height = 6, cache = TRUE}
 #Look for systematic group differences in gender/age/experimenter/task order
 
 #differences in composites
@@ -189,23 +196,26 @@ summary(lm.Exp3)
 
 #differences in TB performance
 
-#Age v. ToMComposites
+#Age v. TB
 sjp.xtab(belief$TBComp, belief$Age, show.total = FALSE)
 
-#Gender v. ToMComposites
+#Gender v. TB
 sjp.xtab(belief$TBComp, belief$Gender, show.total = FALSE)
 
-#Experimenter v. ToMComposites
+#Experimenter v. TB
 sjp.xtab(belief$TBComp, belief$Experimenter, show.total = FALSE)
 
 
 
 ```
 
+## Group Differences building the model
 
-There are differences between ages groups and their performance on ToM tasks:
+###Group differences predicting ToM performance
 
-```{r, echo = FALSE}
+There are differences between ages groups and their performance on ToM tasks: Age is included in future models.
+
+```{r, echo = FALSE, cache = TRUE}
 sjp.xtab(belief$ToMComposite, belief$Age, show.total = FALSE)
 ```
 
@@ -213,14 +223,206 @@ sjp.xtab(belief$ToMComposite, belief$Age, show.total = FALSE)
 
 We do not see similar patterns for gender or experimenter
 
+There are differences between task order and ToM performanc: Task Order is included in future models.
 
-```{r, echo = FALSE}
+###Group differences predicting working memory performance
 
+```{r, echo = FALSE, cache = TRUE}
+
+#differences in composites
+#Age v. Corsi
+sjp.xtab(belief$FCorsiCal, belief$Age, show.total = FALSE)
+sjp.xtab(belief$BCorsiCal, belief$Age, show.total = FALSE)
+sjp.xtab(belief$FCorsihlp, belief$Age, show.total = FALSE)
+sjp.xtab(belief$BCorsihlp, belief$Age, show.total = FALSE)
+
+lm.AgeWM1<-lm(FCorsiCal~Age, data = belief)
+summary(lm.AgeWM1) #Age significantly predicts differences P<.001 Beta = 4.9
+lm.AgeWM2<-lm(BCorsiCal~Age, data = belief)
+summary(lm.AgeWM2) #Age significantly predicts differences P<.001 Beta = 4.4
+lm.AgeWM3<-lm(FCorsihlp~Age, data = belief)
+summary(lm.AgeWM3) #Age significantly predicts differences P <.001 Beta = .75 (span)
+lm.AgeWM4<-lm(BCorsihlp~Age, data = belief)
+summary(lm.AgeWM4) #Age significantly predicts differences P<.001 Beta = .84
+
+#Conclusion, age is a contributing factor to the performance on Corsi Tasks. 
+
+#Gender v. Corsi
+sjp.xtab(belief$FCorsiCal, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$BCorsiCal, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$FCorsihlp, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$BCorsihlp, belief$Gender, show.total = FALSE)
+
+lm.GenderWM1<-lm(FCorsiCal~Gender, data = belief)
+summary(lm.GenderWM1) #No significant differences
+lm.GenderWM2<-lm(BCorsiCal~Gender, data = belief)
+summary(lm.GenderWM2) #No significant differences
+lm.GenderWM3<-lm(FCorsihlp~Gender, data = belief)
+summary(lm.GenderWM3) #No significant differences
+lm.GenderWM4<-lm(BCorsihlp~Gender, data = belief)
+summary(lm.GenderWM4) #No significant differences
+
+#Conclusion, there are no systematic nor statistical differences in Corsi performance between the genders
+
+#Experimenter v. Corsi
+sjp.xtab(belief$FCorsiCal, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$BCorsiCal, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$FCorsihlp, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$BCorsihlp, belief$Experimenter, show.total = FALSE)
+
+lm.ExpWM1<-lm(FCorsiCal~Experimenter, data = belief)
+summary(lm.ExpWM1) #No significant Difference
+lm.ExpWM2<-lm(BCorsiCal~Experimenter, data = belief)
+summary(lm.ExpWM2) #No significant Difference
+lm.ExpWM3<-lm(FCorsihlp~Experimenter, data = belief)
+summary(lm.ExpWM3) #No significant Difference
+lm.ExpWM4<-lm(BCorsihlp~Experimenter, data = belief)
+summary(lm.ExpWM4) #No significant Difference
+
+#Conclusion, there are no systematic nor statistical differences in ToM tasks between the two experimenters.
+
+
+#Age v. Word Span
+sjp.xtab(belief$FwordRaw, belief$Age, show.total = FALSE)
+sjp.xtab(belief$FwordSpan, belief$Age, show.total = FALSE)
+sjp.xtab(belief$BwordRaw, belief$Age, show.total = FALSE)
+sjp.xtab(belief$BwordSpan, belief$Age, show.total = FALSE)
+
+lm.AgeWM5<-lm(FwordRaw~Age, data = belief)
+summary(lm.AgeWM5) #Age significantly predicts differences P<.05 Beta = 1.08
+lm.AgeWM6<-lm(FwordSpan~Age, data = belief)
+summary(lm.AgeWM6) #Age significantly predicts differences P<.001 Beta = .47
+lm.AgeWM7<-lm(BwordRaw~Age, data = belief)
+summary(lm.AgeWM7) #Age significantly predicts differences P <.01 Beta = 1.38
+lm.AgeWM8<-lm(BwordSpan~Age, data = belief)
+summary(lm.AgeWM8) #Age significantly predicts differences P<.05 Beta = .45
+
+#Conclusion, age is a contributing factor to the performance on Corsi Tasks. 
+
+#Gender v. Word Span
+sjp.xtab(belief$FwordRaw, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$FwordSpan, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$BwordRaw, belief$Gender, show.total = FALSE)
+sjp.xtab(belief$BwordSpan, belief$Gender, show.total = FALSE)
+
+lm.GenderWM5<-lm(FwordRaw~Gender, data = belief)
+summary(lm.GenderWM5) #No significant differences
+lm.GenderWM6<-lm(FwordSpan~Gender, data = belief)
+summary(lm.GenderWM6) #No significant differences
+lm.GenderWM7<-lm(BwordRaw~Gender, data = belief)
+summary(lm.GenderWM7) #No significant differences
+lm.GenderWM8<-lm(BwordSpan~Gender, data = belief)
+summary(lm.GenderWM8) #No significant differences
+
+#Conclusion, there are no systematic nor statistical differences in Word Span performance between the genders
+
+#Experimenter v. Word Span
+sjp.xtab(belief$FwordRaw, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$FwordSpan, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$BwordRaw, belief$Experimenter, show.total = FALSE)
+sjp.xtab(belief$BwordSpan, belief$Experimenter, show.total = FALSE)
+
+lm.ExpWM5<-lm(FwordRaw~Experimenter, data = belief)
+summary(lm.ExpWM5) #No significant Difference
+lm.ExpWM6<-lm(FwordSpan~Experimenter, data = belief)
+summary(lm.ExpWM6) #No significant Difference
+lm.ExpWM7<-lm(BwordRaw~Experimenter, data = belief)
+summary(lm.ExpWM7) #No significant Difference
+lm.ExpWM8<-lm(BwordSpan~Experimenter, data = belief)
+summary(lm.ExpWM8) #No significant Difference
+
+lm.TO <-lm(FWDCompositehlp ~ TaskOrder, data = belief)
+summary(lm.TO) #Significant (marginal) P=.06, beta = -.075
+lm.TO2 <-lm(ToMCompositeC ~ TaskOrder, data = belief)
+summary(lm.TO2) #Significant P <.05 beta = -.13
+lm.TO3 <-lm(ToMCompositeL ~ TaskOrder, data = belief)
+summary(lm.TO3) # Marginally significant at P<.071 Beta = 0.092
+```
+
+There are differences in working memory performance (in both Corsi block task and word span task) between task orders and age. There are no differences between gender or experimenter. 
+
+##How are the measures correlated?
+```{r, echo = FALSE, cache = TRUE}
+########################################################################################
+#WORKING MEMORY: 
+########################################################################################
+##Combine tasks for composite score (span)
+belief$FWDcompositehlp = (belief$zFCorsihlp + belief$zFWordSpan)/2
+belief$BWDcompositehlp = (belief$zBCorsihlp + belief$zBWordSpan)/2
+
+#Combine scored variables for composite
+belief$FWDcompositeScore = (belief$zFCorsi + belief$zFWord)/2
+belief$BWDcompositeScore = (belief$zBCorsi + belief$zBWord)/2
+
+#correlation table between working memory tasks
+
+corr.tableWM = data.frame(
+                  Age = c(belief$AgeMonths, na.rm=TRUE),
+                  FCorsi = c(belief$zFCorsi, na.rm=TRUE),
+                  BCorsi = c(belief$zBCorsi, na.rm=TRUE),
+                  FCorsihlp = c(belief$zFCorsihlp, na.rm = TRUE),
+                  BCorsihlp = c(belief$zBCorsihlp, na.rm = TRUE),
+                  FwordSpan = c(belief$zFWordSpan, na.rm=TRUE),
+                  BwordSpan = c(belief$zBWordSpan, na.rm=TRUE),
+                  Fword = c(belief$zFWord, na.rm=TRUE),
+                  Bword = c(belief$zBWord, na.rm=TRUE),
+                  FWDcompositehlp = c(belief$FWDcompositehlp, na.rm=TRUE),
+                  BWDcompositehlp = c(belief$BWDcompositehlp, na.rm=TRUE),
+                  FWDcompositeScore = c(belief$FWDcompositeScore, na.rm = TRUE),
+                  BWDcompositeScore = c(belief$BWDcompositeScore, na.rm = TRUE)
+)
+head(corr.tableWM)
+rcorr(as.matrix(corr.tableWM), type = c("pearson"))
+
+sjt.corr(corr.tableWM, "pairwise", "pearson")
+sjp.corr(corr.tableWM, title = "Correlation between WM measures", corr.method = "pearson", na.deletion = "pairwise")
+
+
+#belief$BWDcompositehlp = (belief$Z_Bcorsi_hlp + belief$Z_BwordSpan)/2
 ```
 
 
+```{r, echo = FALSE}
+#sjp.cor(corr.tableWM, title = "Correlation between WM measures", corr.method = "pearson", na.deletion = "pairwise")
 
 
+```
+ Correlation between WM is strong. Due to existing literature, backward counting tasks are a more reliable measure of WM. BWDcompositeSocre will be use. This is derived averaging zScores from backward corsi and backward word scores. 
+
+##How does WM correlate with other measures?
+
+```{r, echo = FALSE}
+#z-score ToM outcome variables
+belief$zToMC <- scale(belief$ToMCompositeC, center = TRUE, scale = TRUE)
+belief$zToML <- scale(belief$ToMCompositeL, center = TRUE, scale = TRUE)
+belief$zTB <- scale(belief$TBComp, center = TRUE, scale = TRUE)
+head(belief)
+
+corr.tableToMWM <- data.frame(
+    Age = c(belief$AgeMonths, na.rm=TRUE),
+    TaskOrder = c(belief$TaskOrder, na.rm = TRUE),
+    BWDcompositehlp = c(belief$BWDcompositehlp, na.rm=TRUE),
+    BWDcompositeScore = c(belief$BWDcompositeScore, na.rm = TRUE),
+    ToMCompositeC = c(belief$ToMCompositeC, na.rm = TRUE),
+    ToMCompositeL = c(belief$ToMCompositeL, na.rm = TRUE),
+    TBComp = c(belief$TBComp, na.rm = TRUE),
+    PARC = c(belief$PARM2C, na.rm = TRUE),
+    PARL = c(belief$PARM2L, na.rm = TRUE),
+    ToMC = c(belief$zToMC, na.rm = TRUE),
+    ToML = c(belief$zToML, na.rm = TRUE),
+    TB = c(belief$TBComp, na.rm = TRUE)
+)
+head(corr.tableToMWM)
+
+
+#ToMCorr<-sjt.corr(corr.tableToMWM, "pairwise", "pearson")
+
+#sjp.corr(corr.tableToMWM, title = "Correlation between WM measures and ToM measures", corr.method = "pearson", na.deletion = "pairwise")
+
+```
+`r sjt.corr(corr.tableToMWM, "pairwise", "pearson", no.output = TRUE)$knitr`
+
+##Is there a difference in WM performance between belief, reality and PAR reasoners controlling for age, and task order?
 
 
 
