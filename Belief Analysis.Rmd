@@ -424,7 +424,47 @@ head(corr.tableToMWM)
 
 ##Is there a difference in WM performance between belief, reality and PAR reasoners controlling for age, and task order?
 
+```{r, echo = FALSE}
+###Analysis
 
+###Regression
+lm.ToMC <- lm(zToMC ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.ToMC)
+
+lm.ToML <- lm(zToML ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.ToML)
+
+lm.TB <- lm(zTB ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.TB)
+
+#none of the models have BWDCompositeScore as a significant predictor
+
+lm.ToMC2 <- lm(zToMC ~ FWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.ToMC2) #Fwd is significant
+
+lm.ToML2 <- lm(zToML ~ FWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.ToML2)
+
+lm.TB2 <- lm(zTB ~ FWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.TB2)
+
+###
+#Is PAR reasoning predicted by WM?
+###
+
+lm.PARM2C <- lm(PARM2C ~ BWDcompositeScore +AgeMonths + TaskOrder, data = belief)
+summary(lm.PARM2C)
+
+lm.PARM2L <- lm(PARM2L ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+summary(lm.PARM2L) #Marginally Significant p = .06212 b = .17
+
+###Chi Squared
+
+
+
+
+
+```
 
 
 
