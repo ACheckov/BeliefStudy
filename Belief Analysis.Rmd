@@ -455,7 +455,7 @@ summary(lm.TB2)
 lm.PARM2C <- lm(PARM2C ~ BWDcompositeScore +AgeMonths + TaskOrder, data = belief)
 summary(lm.PARM2C)
 
-lm.PARM2L <- lm(PARM2L ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief)
+lm.PARM2L <- lm(PARM2L ~ BWDcompositeScore + AgeMonths + TaskOrder, data = belief) 
 summary(lm.PARM2L) #Marginally Significant p = .06212 b = .17
 
 ###Chi Squared
